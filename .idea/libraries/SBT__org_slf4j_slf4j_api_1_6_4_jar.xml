@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="SBT: org.slf4j:slf4j-api:1.6.4:jar">
+    <CLASSES>
+      <root url="jar:///usr/local/Cellar/typesafe-activator/1.3.2/libexec/repository/org.slf4j/slf4j-api/1.6.4/jars/slf4j-api.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
