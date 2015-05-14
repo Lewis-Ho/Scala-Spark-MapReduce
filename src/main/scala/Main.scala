@@ -1,6 +1,6 @@
 import org.apache.spark.SparkContext._
 import org.apache.spark.{SparkConf, SparkContext}
-
+import scala.math._
 import scala.collection.mutable.ArrayBuffer
 
 
@@ -21,9 +21,11 @@ object Main {
     //val logFile = "oneLine"
     val conf = new SparkConf().setAppName("wordCount").setMaster("local[*]")
     val sc = new SparkContext(conf)
-    val logData = sc.textFile(logFile).take(1000) //,2).cache()
-    //val logData = sc.textFile(logFile)
+    val logData = sc.textFile(logFile).take(50) //,2).cache()
 
+    val logDataWh = sc.textFile(logFile)
+    val lineCount = logDataWh.count()
+    println("OUTPUT LINE COUNT " + lineCount)
 
     //val documents = logData.flatMap(line => line.split(" ")).filter(line => line.contains("gene_")).map(line => (line, 1)).reduceByKey(_ + _)
     val documents = logData.flatMap(line => line.split("\t"))
@@ -61,6 +63,19 @@ object Main {
     reducedTotalGene.foreach( a => {
       println(a)
     })
+
+    //val tf:Float
+    println("Term Frequency – Inverse Document Frequency Result: ")
+    reducedTotalGene.foreach( a => {
+      val a2 = BigDecimal.apply(a._2)
+      val tf: BigDecimal = 1/a2
+      val idf: BigDecimal = math.log(lineCount / a._2)
+      val TFResult: BigDecimal = tf * idf
+      println(a + " " + a._1 +" " + a2 + " " + tf + " "  + idf + " " + TFResult)
+      println(" ")
+    })
+
+
 
     // Now, if you want to print this...
     //found.foreach( { case ( word, title ) => mapForGeneTerms } )
