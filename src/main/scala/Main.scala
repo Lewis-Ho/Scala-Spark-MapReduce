@@ -1,6 +1,6 @@
 import org.apache.spark.SparkContext._
 import org.apache.spark.{SparkConf, SparkContext}
-import scala.math._
+
 import scala.collection.mutable.ArrayBuffer
 
 
@@ -9,40 +9,27 @@ import scala.collection.mutable.ArrayBuffer
  */
 
 object Main {
-  def ++[K, V](ts: Map[K, V], xs: Map[K, V]): Map[K, V] =
-    (ts /: xs)  {case (acc, entry) =>
-      println("acc = " + acc)
-      println("entry = " + entry)
-      acc + entry
-    }
-
   def main(args: Array[String]) {
     val logFile = "project3" // Should be some file on your system
     //val logFile = "oneLine"
     val conf = new SparkConf().setAppName("wordCount").setMaster("local[*]")
     val sc = new SparkContext(conf)
-    val logData = sc.textFile(logFile).take(50) //,2).cache()
+    val logData = sc.textFile(logFile).take(9999999) //,2).cache()
 
     val logDataWh = sc.textFile(logFile)
     val lineCount = logDataWh.count()
     println("OUTPUT LINE COUNT " + lineCount)
 
-    //val documents = logData.flatMap(line => line.split(" ")).filter(line => line.contains("gene_")).map(line => (line, 1)).reduceByKey(_ + _)
-    val documents = logData.flatMap(line => line.split("\t"))
-
-    //val rdd = logData.flatMap(line => line.split(" ").filter(line => line.contains("gene_")).map(word => (word, 1)).reduce(_ + _))
-
-
-
-    //val words = documents.foreach(line => line.split(" ").filter(line => line.contains("gene_")).distinct
-//    val yourRdd = documents.map(arr => {
-//      val words = arr.split( " " ).filter(line => line.contains("gene_")).distinct
-//      words.map( word => ( word, 1 ) )
-//    } )
-
     // Initialize arraybuffer for gene terms
     var geneArray = ArrayBuffer[(String, Int)]()
+    // Initialize arraybuffer for tfidf result for every gene term
+    var geneTermFreqArray = ArrayBuffer[(String, BigDecimal)]()
 
+    // Get rid of tab
+    val documents = logData.flatMap(line => line.split("\t"))
+
+
+    // For each element, get rid of duplicate and write to new array
     documents.foreach(a => {
       // Separate word for each document, only choose gene term without duplicates in single document
       val words = a.split(" ").filter(line => line.contains("gene_")).map(line => (line, 1)).distinct
@@ -53,33 +40,40 @@ object Main {
       }
     })
 
-    // Create RDDs: parallelizing collection
-    val distData = sc.parallelize(geneArray)
+    val emptyRdd = sc.emptyRDD[(String, BigDecimal)]
 
-    // Map all duplicates
-    val reducedTotalGene = distData.reduceByKey(_ + _)
-
-    //reducedTotalGene.saveAsTextFile("result")
-    reducedTotalGene.foreach( a => {
-      println(a)
-    })
-
-    //val tf:Float
-    println("Term Frequency – Inverse Document Frequency Result: ")
-    reducedTotalGene.foreach( a => {
+    // Create RDDs: parallelizing collection, do calculation for each element
+    val distData = sc.parallelize(geneArray).reduceByKey(_ + _).foreach( a=> {
       val a2 = BigDecimal.apply(a._2)
       val tf: BigDecimal = 1/a2
       val idf: BigDecimal = math.log(lineCount / a._2)
       val TFResult: BigDecimal = tf * idf
-      println(a + " " + a._1 +" " + a2 + " " + tf + " "  + idf + " " + TFResult)
-      println(" ")
-    })
+//      println(a + " " + a._1 +" " + a2 + " " + tf + " "  + idf + " " + TFResult)
+//      println(" ")
 
+      // Write to new array with term frequency result
+      val tempTuple = (a._1, TFResult)
+      //println(tempTuple)
+      geneTermFreqArray += tempTuple
+      println(geneTermFreqArray)
+      // Create vector, for each gene term we get their similarity
+//      sc.parallelize(geneTermFreqArray).reduceByKey(_ + _).foreach( a => {
+//        sc.parallelize(geneTermFreqArray).reduceByKey(_ + _).foreach( b => {
+//          //emptyRdd = a
+//          // Same term, skip
+//          if (a._1 == b._1){
+//            // Skip
+//          } else {
+//            // Calculate Similarity
+//            val similarity =
+//          }
+//        })
+//      })
+    })
 
 
     // Now, if you want to print this...
     //found.foreach( { case ( word, title ) => mapForGeneTerms } )
-    //words.foreach( println )
 
 //    val numOfDocuments = logData.count()
 //    val numOfGenes = logData.filter(line => line.contains("gene_")).count()
